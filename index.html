@@ -1,0 +1,1225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>METU StudyRadar — Live Campus Study Spot Occupancy</title>
+  <style>
+    :root {
+      --bg: #0b1120;
+      --surface: #131c31;
+      --surface-2: #1b2742;
+      --border: #263554;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --metu: #e11d48;
+      --metu-hover: #be123c;
+      --green: #10b981;
+      --yellow: #f59e0b;
+      --red: #ef4444;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+    }
+
+    body {
+      background: radial-gradient(circle at top right, #1e1b38 0%, var(--bg) 45%);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 22px 18px 64px;
+    }
+
+    .container {
+      max-width: 1120px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 20px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--metu), #881337);
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      font-size: 17px;
+      letter-spacing: -0.5px;
+      box-shadow: 0 6px 18px rgba(225, 29, 72, 0.35);
+    }
+
+    .brand h1 {
+      font-size: 1.35rem;
+      letter-spacing: -0.3px;
+    }
+
+    .brand p {
+      font-size: 0.84rem;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin-top: 2px;
+    }
+
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      display: inline-block;
+      animation: pulse 1.8s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(1.35); }
+    }
+
+    .header-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .qr-trigger {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 14px;
+      border-radius: 11px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.15s;
+    }
+
+    .qr-trigger:hover {
+      border-color: #64748b;
+      background: var(--surface-2);
+    }
+
+    .finals-toggle {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 10px 14px;
+      border-radius: 11px;
+      cursor: pointer;
+      user-select: none;
+      transition: 0.2s;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .finals-toggle.active {
+      border-color: var(--metu);
+      background: rgba(225, 29, 72, 0.16);
+      color: #fecdd3;
+    }
+
+    .finals-toggle input {
+      accent-color: var(--metu);
+      width: 15px;
+      height: 15px;
+      cursor: pointer;
+    }
+
+    /* Active Check-in TTL Banner */
+    .checkin-banner {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      border-radius: 13px;
+      padding: 12px 16px;
+      margin-bottom: 18px;
+      font-size: 0.88rem;
+    }
+
+    .checkin-banner.visible {
+      display: flex;
+    }
+
+    .checkin-meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .ttl-pill {
+      background: rgba(16, 185, 129, 0.2);
+      color: #6ee7b7;
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+
+    .checkout-btn {
+      background: #064e3b;
+      border: 1px solid #10b981;
+      color: #ecfdf5;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .checkout-btn:hover {
+      background: #047857;
+    }
+
+    /* KPI Row */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+
+    .stat-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 15px 16px;
+    }
+
+    .stat-label {
+      font-size: 0.78rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      margin-bottom: 6px;
+    }
+
+    .stat-value {
+      font-size: 1.42rem;
+      font-weight: 700;
+    }
+
+    .stat-sub {
+      font-size: 0.76rem;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+
+    /* Interactive Campus Radar Map */
+    .radar-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px 18px;
+      margin-bottom: 22px;
+    }
+
+    .radar-head {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .radar-head h2 {
+      font-size: 0.98rem;
+      font-weight: 700;
+    }
+
+    .legend {
+      display: flex;
+      gap: 14px;
+      font-size: 0.76rem;
+      color: var(--muted);
+    }
+
+    .legend span {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .map-wrap {
+      width: 100%;
+      background: #0b1325;
+      border: 1px solid #1e2d4a;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    svg#campusMap {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .map-node {
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+
+    .map-node:hover .node-core {
+      transform: scale(1.2);
+    }
+
+    .node-core {
+      transform-box: fill-box;
+      transform-origin: center;
+      transition: transform 0.15s ease;
+    }
+
+    /* Controls */
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .search-input {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 14px;
+      border-radius: 10px;
+      min-width: 240px;
+      flex: 1;
+      max-width: 340px;
+      outline: none;
+      font-size: 0.88rem;
+    }
+
+    .search-input:focus {
+      border-color: var(--metu);
+    }
+
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .pill {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 8px 13px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.15s;
+    }
+
+    .pill:hover {
+      border-color: #64748b;
+      color: var(--text);
+    }
+
+    .pill.active {
+      background: var(--metu);
+      border-color: var(--metu);
+      color: #fff;
+    }
+
+    /* Cards Grid */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      transition: transform 0.15s, border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .card:hover {
+      transform: translateY(-2px);
+      border-color: #475569;
+    }
+
+    .card.highlighted {
+      border-color: var(--metu);
+      box-shadow: 0 0 0 2px rgba(225, 29, 72, 0.35);
+    }
+
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .spot-name {
+      font-size: 1.03rem;
+      font-weight: 700;
+      line-height: 1.3;
+    }
+
+    .spot-zone {
+      font-size: 0.79rem;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+
+    .badge {
+      font-size: 0.73rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+
+    .badge.low { background: rgba(16, 185, 129, 0.16); color: #34d399; }
+    .badge.mid { background: rgba(245, 158, 11, 0.16); color: #fbbf24; }
+    .badge.high { background: rgba(239, 68, 68, 0.18); color: #f87171; }
+
+    .meter-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.84rem;
+      margin-bottom: 6px;
+    }
+
+    .meter-track {
+      width: 100%;
+      height: 8px;
+      background: #0b1120;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .meter-fill {
+      height: 100%;
+      border-radius: 999px;
+      transition: width 0.35s ease, background-color 0.25s ease;
+    }
+
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .tag {
+      font-size: 0.74rem;
+      background: #0e1629;
+      color: #cbd5e1;
+      padding: 4px 9px;
+      border-radius: 6px;
+      border: 1px solid #243352;
+    }
+
+    .forecast-label {
+      font-size: 0.74rem;
+      color: var(--muted);
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .bars {
+      display: flex;
+      align-items: flex-end;
+      gap: 7px;
+      height: 40px;
+    }
+
+    .bar-wrap {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      height: 100%;
+      justify-content: flex-end;
+    }
+
+    .bar {
+      width: 100%;
+      background: #334155;
+      border-radius: 3px 3px 0 0;
+      min-height: 4px;
+      transition: height 0.3s ease;
+    }
+
+    .bar.now {
+      background: var(--metu);
+    }
+
+    .bar-hour {
+      font-size: 0.65rem;
+      color: var(--muted);
+    }
+
+    .meta-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.73rem;
+      color: var(--muted);
+    }
+
+    .card-footer {
+      display: flex;
+      gap: 8px;
+      padding-top: 10px;
+      border-top: 1px solid #22304c;
+      margin-top: auto;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 9px 10px;
+      border-radius: 9px;
+      border: 1px solid var(--border);
+      background: #0e1629;
+      color: var(--text);
+      font-size: 0.81rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.15s;
+    }
+
+    .btn:hover {
+      background: var(--surface-2);
+    }
+
+    .btn.primary {
+      background: var(--metu);
+      border-color: var(--metu);
+    }
+
+    .btn.primary:hover {
+      background: var(--metu-hover);
+    }
+
+    .btn.checked {
+      background: #065f46;
+      border-color: #10b981;
+      color: #ecfdf5;
+    }
+
+    /* Modals */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(2, 6, 23, 0.78);
+      display: none;
+      place-items: center;
+      padding: 16px;
+      z-index: 60;
+    }
+
+    .modal-backdrop.open {
+      display: grid;
+    }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 22px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    }
+
+    .modal h3 {
+      font-size: 1.08rem;
+      margin-bottom: 6px;
+    }
+
+    .modal p {
+      font-size: 0.84rem;
+      color: var(--muted);
+      margin-bottom: 16px;
+      line-height: 1.45;
+    }
+
+    .status-options {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .status-btn {
+      padding: 12px 8px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: #0e1629;
+      color: var(--text);
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.82rem;
+    }
+
+    .status-btn:hover {
+      border-color: var(--metu);
+      background: var(--surface-2);
+    }
+
+    .qr-box {
+      background: #fff;
+      width: 148px;
+      height: 148px;
+      margin: 0 auto 14px;
+      border-radius: 12px;
+      padding: 12px;
+      display: grid;
+      place-items: center;
+    }
+
+    .qr-select {
+      width: 100%;
+      background: #0e1629;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px;
+      border-radius: 9px;
+      margin-bottom: 14px;
+      font-size: 0.86rem;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 22px;
+      right: 22px;
+      background: var(--green);
+      color: #022c22;
+      padding: 12px 18px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 0.85rem;
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.4);
+      opacity: 0;
+      transform: translateY(8px);
+      pointer-events: none;
+      transition: 0.25s;
+      z-index: 80;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    footer {
+      margin-top: 32px;
+      text-align: center;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand">
+        <div class="logo">SR</div>
+        <div>
+          <h1>METU StudyRadar</h1>
+          <p><span class="live-dot"></span> Real-Time Study Space Occupancy • METU Campus</p>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <button class="qr-trigger" onclick="openQrModal()">
+          <span>[QR]</span> Simulate Table Scan
+        </button>
+        <label class="finals-toggle" id="finalsLabel">
+          <input type="checkbox" id="finalsToggle" />
+          <span>Finals Week Mode</span>
+        </label>
+      </div>
+    </header>
+
+    <!-- Active Check-in TTL Banner -->
+    <div class="checkin-banner" id="checkinBanner">
+      <div class="checkin-meta">
+        <strong>Checked in at <span id="checkinSpotName">-</span></strong>
+        <span class="ttl-pill">Auto-decay TTL: <span id="checkinTimer">90:00</span></span>
+      </div>
+      <button class="checkout-btn" onclick="checkOut()">Leave Desk (+1)</button>
+    </div>
+
+    <!-- KPI Stats -->
+    <section class="stats">
+      <div class="stat-box">
+        <div class="stat-label">Available Desks Now</div>
+        <div class="stat-value" id="totalFree">-</div>
+        <div class="stat-sub" id="totalCapSub">Across 6 campus hubs</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Best Spot Right Now</div>
+        <div class="stat-value" id="bestSpot" style="font-size: 1.08rem;">-</div>
+        <div class="stat-sub" id="bestSpotSub">Lowest occupancy on campus</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Avg. Campus Occupancy</div>
+        <div class="stat-value" id="avgOcc">-</div>
+        <div class="stat-sub" id="modeLabel">Normal academic week</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Crowdsourced Reports (1h)</div>
+        <div class="stat-value" id="reportCount">42</div>
+        <div class="stat-sub">Weighted with 90m TTL decay</div>
+      </div>
+    </section>
+
+    <!-- Interactive METU Campus Radar Map -->
+    <section class="radar-panel">
+      <div class="radar-head">
+        <h2>Interactive Campus Radar (Click any hub to inspect)</h2>
+        <div class="legend">
+          <span><i class="dot" style="background: var(--green);"></i> Comfortable (&lt;55%)</span>
+          <span><i class="dot" style="background: var(--yellow);"></i> Moderate (55–79%)</span>
+          <span><i class="dot" style="background: var(--red);"></i> Crowded (80%+)</span>
+        </div>
+      </div>
+      <div class="map-wrap">
+        <svg id="campusMap" viewBox="0 0 760 245" aria-label="METU Campus Schematic Map"></svg>
+      </div>
+    </section>
+
+    <!-- Search & Filters -->
+    <section class="controls">
+      <input type="text" id="searchInput" class="search-input" placeholder="Search study hubs (e.g., Library, KKM, Dorms)..." />
+      <div class="filters">
+        <button class="pill active" data-filter="all">All Hubs</button>
+        <button class="pill" data-filter="available">Available (&lt;60%)</button>
+        <button class="pill" data-filter="silent">Quiet Zone</button>
+        <button class="pill" data-filter="power">Plentiful Outlets</button>
+        <button class="pill" data-filter="247">24/7 Open</button>
+        <button class="pill" data-filter="group">Group Study</button>
+      </div>
+    </section>
+
+    <!-- Spot Cards -->
+    <main class="grid" id="spotGrid"></main>
+
+    <footer>
+      METU StudyRadar MVP • GDG on Campus METU Production Team Prototype • Simulated live telemetry
+    </footer>
+  </div>
+
+  <!-- Report Crowd Modal -->
+  <div class="modal-backdrop" id="reportModal">
+    <div class="modal">
+      <h3 id="reportModalTitle">Report Crowd Level</h3>
+      <p>Currently at this study space? Select the current occupancy to update the live campus feed:</p>
+      <div class="status-options">
+        <button class="status-btn" onclick="submitReport(0.28)">Comfortable<br/><small>(~28%)</small></button>
+        <button class="status-btn" onclick="submitReport(0.66)">Moderate<br/><small>(~66%)</small></button>
+        <button class="status-btn" onclick="submitReport(0.95)">Crowded<br/><small>(~95%)</small></button>
+      </div>
+      <button class="btn" style="width:100%;" onclick="closeModal('reportModal')">Cancel</button>
+    </div>
+  </div>
+
+  <!-- QR Check-in Simulation Modal -->
+  <div class="modal-backdrop" id="qrModal">
+    <div class="modal">
+      <h3>Phase 1 Demo: Table QR Check-In</h3>
+      <p>Students scan a QR sticker on their desk to log occupancy in 1 tap. Sessions auto-expire after 90 minutes to prevent stale data.</p>
+      <div class="qr-box" aria-hidden="true">
+        <svg viewBox="0 0 100 100" width="124" height="124">
+          <rect width="100" height="100" fill="#ffffff"/>
+          <rect x="6" y="6" width="28" height="28" fill="#0f172a"/>
+          <rect x="11" y="11" width="18" height="18" fill="#ffffff"/>
+          <rect x="15" y="15" width="10" height="10" fill="#e11d48"/>
+          <rect x="66" y="6" width="28" height="28" fill="#0f172a"/>
+          <rect x="71" y="11" width="18" height="18" fill="#ffffff"/>
+          <rect x="75" y="15" width="10" height="10" fill="#0f172a"/>
+          <rect x="6" y="66" width="28" height="28" fill="#0f172a"/>
+          <rect x="11" y="71" width="18" height="18" fill="#ffffff"/>
+          <rect x="15" y="75" width="10" height="10" fill="#0f172a"/>
+          <rect x="42" y="10" width="8" height="8" fill="#0f172a"/>
+          <rect x="52" y="18" width="8" height="14" fill="#0f172a"/>
+          <rect x="40" y="36" width="18" height="8" fill="#0f172a"/>
+          <rect x="12" y="42" width="16" height="8" fill="#0f172a"/>
+          <rect x="64" y="44" width="12" height="16" fill="#0f172a"/>
+          <rect x="82" y="42" width="10" height="10" fill="#0f172a"/>
+          <rect x="44" y="54" width="12" height="12" fill="#e11d48"/>
+          <rect x="42" y="74" width="14" height="18" fill="#0f172a"/>
+          <rect x="64" y="68" width="10" height="10" fill="#0f172a"/>
+          <rect x="78" y="74" width="14" height="18" fill="#0f172a"/>
+        </svg>
+      </div>
+      <select id="qrSpotSelect" class="qr-select"></select>
+      <div class="modal-actions">
+        <button class="btn" onclick="closeModal('qrModal')">Close</button>
+        <button class="btn primary" onclick="confirmQrCheckIn()">Simulate Scan & Check In</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">Updated!</div>
+
+  <script>
+    const spots = [
+      {
+        id: 1,
+        short: "Main Library",
+        name: "Main Library — Reading Hall",
+        zone: "Central Campus, Floor 1–2",
+        total: 180,
+        baseOccupied: 132,
+        finalsBoost: 44,
+        userDelta: 0,
+        noise: "Silent",
+        tags: ["Quiet Zone", "Plentiful Outlets", "Strong Eduroam"],
+        flags: ["silent", "power"],
+        updated: "2m ago",
+        hourly: [35, 68, 84, 78, 65, 22],
+        map: { x: 235, y: 82 }
+      },
+      {
+        id: 2,
+        short: "Library 24/7",
+        name: "Library 24/7 Study Hall",
+        zone: "Main Library Ground Annex",
+        total: 90,
+        baseOccupied: 48,
+        finalsBoost: 39,
+        userDelta: 0,
+        noise: "Silent",
+        tags: ["24/7 Open", "Quiet Zone", "Plentiful Outlets"],
+        flags: ["247", "silent", "power"],
+        updated: "1m ago",
+        hourly: [38, 52, 62, 70, 86, 76],
+        map: { x: 300, y: 162 }
+      },
+      {
+        id: 3,
+        short: "MM Commons",
+        name: "MM Building — Study Commons",
+        zone: "Engineering Central",
+        total: 55,
+        baseOccupied: 27,
+        finalsBoost: 24,
+        userDelta: 0,
+        noise: "Low Hum",
+        tags: ["Plentiful Outlets", "Central Location"],
+        flags: ["power"],
+        updated: "5m ago",
+        hourly: [24, 62, 74, 54, 34, 12],
+        map: { x: 430, y: 80 }
+      },
+      {
+        id: 4,
+        short: "KKM Foyer",
+        name: "KKM — Foyer & Workspaces",
+        zone: "Culture & Convention Center",
+        total: 65,
+        baseOccupied: 24,
+        finalsBoost: 26,
+        userDelta: 0,
+        noise: "Moderate",
+        tags: ["Group Study", "Wide Tables", "Coffee Nearby"],
+        flags: ["group"],
+        updated: "6m ago",
+        hourly: [18, 46, 56, 44, 28, 8],
+        map: { x: 115, y: 170 }
+      },
+      {
+        id: 5,
+        short: "East Dorms",
+        name: "East Dorms — Study Hall",
+        zone: "Dormitories Region",
+        total: 80,
+        baseOccupied: 26,
+        finalsBoost: 48,
+        userDelta: 0,
+        noise: "Silent",
+        tags: ["24/7 Open", "Quiet Zone", "Plentiful Outlets"],
+        flags: ["247", "silent", "power"],
+        updated: "3m ago",
+        hourly: [16, 26, 36, 48, 78, 84],
+        map: { x: 645, y: 112 }
+      },
+      {
+        id: 6,
+        short: "Çarşı Cafes",
+        name: "Çarşı — Cafes & Open Desks",
+        zone: "METU Shopping Center",
+        total: 70,
+        baseOccupied: 52,
+        finalsBoost: 15,
+        userDelta: 0,
+        noise: "Lively",
+        tags: ["Group Study", "Food & Coffee"],
+        flags: ["group"],
+        updated: "8m ago",
+        hourly: [28, 82, 86, 76, 54, 10],
+        map: { x: 505, y: 178 }
+      }
+    ];
+
+    const hours = ["09", "12", "15", "18", "21", "00"];
+    let activeFilter = "all";
+    let searchTerm = "";
+    let finalsMode = false;
+    let reportTargetId = null;
+    let highlightedId = null;
+    let reportTotal = 42;
+
+    // Active check-in TTL session
+    let checkedInSpotId = null;
+    let ttlSeconds = 0;
+    let ttlInterval = null;
+
+    function getOccupied(spot) {
+      const raw = spot.baseOccupied + (finalsMode ? spot.finalsBoost : 0) + spot.userDelta;
+      return Math.max(0, Math.min(spot.total, raw));
+    }
+
+    function getStatusInfo(pct) {
+      if (pct < 55) return { label: "Comfortable", cls: "low", color: "#10b981" };
+      if (pct < 80) return { label: "Moderate", cls: "mid", color: "#f59e0b" };
+      return { label: "Crowded", cls: "high", color: "#ef4444" };
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById("toast");
+      toast.textContent = msg;
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 2300);
+    }
+
+    function formatTimer(sec) {
+      const m = String(Math.floor(sec / 60)).padStart(2, "0");
+      const s = String(sec % 60).padStart(2, "0");
+      return `${m}:${s}`;
+    }
+
+    function updateCheckInBanner() {
+      const banner = document.getElementById("checkinBanner");
+      if (!checkedInSpotId) {
+        banner.classList.remove("visible");
+        return;
+      }
+      const spot = spots.find(s => s.id === checkedInSpotId);
+      document.getElementById("checkinSpotName").textContent = spot.short;
+      document.getElementById("checkinTimer").textContent = formatTimer(ttlSeconds);
+      banner.classList.add("visible");
+    }
+
+    function checkIn(id, viaQr = false) {
+      const spot = spots.find(s => s.id === id);
+      if (checkedInSpotId === id) {
+        checkOut();
+        return;
+      }
+      if (getOccupied(spot) >= spot.total) {
+        showToast(`${spot.short} is currently at full capacity!`);
+        return;
+      }
+      // If checked in elsewhere, release previous seat
+      if (checkedInSpotId) {
+        const prev = spots.find(s => s.id === checkedInSpotId);
+        prev.userDelta -= 1;
+      }
+      spot.userDelta += 1;
+      spot.updated = viaQr ? "Just now (QR)" : "Just now";
+      checkedInSpotId = id;
+      reportTotal += 1;
+
+      ttlSeconds = 90 * 60;
+      clearInterval(ttlInterval);
+      ttlInterval = setInterval(() => {
+        ttlSeconds -= 1;
+        if (ttlSeconds <= 0) {
+          checkOut(true);
+        } else {
+          document.getElementById("checkinTimer").textContent = formatTimer(ttlSeconds);
+        }
+      }, 1000);
+
+      updateCheckInBanner();
+      render();
+      showToast(viaQr ? `QR Verified! Checked in at ${spot.short}.` : `Checked in at ${spot.short} (90m TTL started).`);
+    }
+
+    function checkOut(expired = false) {
+      if (!checkedInSpotId) return;
+      const spot = spots.find(s => s.id === checkedInSpotId);
+      spot.userDelta -= 1;
+      spot.updated = "Just now";
+      checkedInSpotId = null;
+      clearInterval(ttlInterval);
+      updateCheckInBanner();
+      render();
+      showToast(expired ? "Session auto-expired (TTL)." : `Desk released at ${spot.short}.`);
+    }
+
+    function focusSpot(id) {
+      highlightedId = id;
+      activeFilter = "all";
+      searchTerm = "";
+      document.getElementById("searchInput").value = "";
+      document.querySelectorAll(".pill").forEach(b => b.classList.toggle("active", b.dataset.filter === "all"));
+      render();
+      const el = document.getElementById(`spot-card-${id}`);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+
+    function renderMap() {
+      const svg = document.getElementById("campusMap");
+      const gridLines = `
+        <defs>
+          <pattern id="grid" width="38" height="38" patternUnits="userSpaceOnUse">
+            <path d="M 38 0 L 0 0 0 38" fill="none" stroke="#16223a" stroke-width="1"/>
+          </pattern>
+        </defs>
+        <rect width="760" height="245" fill="url(#grid)" />
+        <!-- Iconic METU Alley spine -->
+        <path d="M 65 185 Q 240 120, 420 128 T 700 108" fill="none" stroke="#1e3a5f" stroke-width="10" stroke-linecap="round" opacity="0.65"/>
+        <path d="M 65 185 Q 240 120, 420 128 T 700 108" fill="none" stroke="#38bdf8" stroke-width="1.5" stroke-dasharray="6 6" opacity="0.45"/>
+        <text x="348" y="146" fill="#64748b" font-size="10" font-weight="700" letter-spacing="1.6">METU ALLEY</text>
+      `;
+
+      const nodes = spots.map(s => {
+        const occ = getOccupied(s);
+        const pct = Math.round((occ / s.total) * 100);
+        const st = getStatusInfo(pct);
+        const isSelected = highlightedId === s.id;
+        return `
+          <g class="map-node" onclick="focusSpot(${s.id})">
+            <circle cx="${s.map.x}" cy="${s.map.y}" r="${isSelected ? 22 : 17}" fill="${st.color}" opacity="${isSelected ? 0.3 : 0.18}" />
+            <circle class="node-core" cx="${s.map.x}" cy="${s.map.y}" r="9" fill="${st.color}" stroke="#0b1120" stroke-width="2.5" />
+            <rect x="${s.map.x - 46}" y="${s.map.y + 14}" width="92" height="22" rx="6" fill="#131c31" stroke="${isSelected ? '#e11d48' : '#263554'}" stroke-width="1.2" />
+            <text x="${s.map.x}" y="${s.map.y + 28}" text-anchor="middle" fill="#f8fafc" font-size="10.5" font-weight="600">${s.short} • ${pct}%</text>
+          </g>
+        `;
+      }).join("");
+
+      svg.innerHTML = gridLines + nodes;
+    }
+
+    function render() {
+      let totalFree = 0;
+      let totalCap = 0;
+      let bestSpot = null;
+      let lowestPct = 101;
+
+      spots.forEach(s => {
+        const occ = getOccupied(s);
+        const free = s.total - occ;
+        const pct = Math.round((occ / s.total) * 100);
+        totalFree += free;
+        totalCap += s.total;
+        if (pct < lowestPct) {
+          lowestPct = pct;
+          bestSpot = s;
+        }
+      });
+
+      document.getElementById("totalFree").textContent = `${totalFree} desks`;
+      document.getElementById("totalCapSub").textContent = `Out of ${totalCap} total desks tracked`;
+      document.getElementById("bestSpot").textContent = `${bestSpot.short} (${lowestPct}%)`;
+      document.getElementById("bestSpotSub").textContent = `${bestSpot.total - getOccupied(bestSpot)} open desks right now`;
+      document.getElementById("avgOcc").textContent = `${Math.round(((totalCap - totalFree) / totalCap) * 100)}%`;
+      document.getElementById("modeLabel").textContent = finalsMode ? "Finals week peak load active" : "Normal academic week";
+      document.getElementById("reportCount").textContent = reportTotal;
+
+      renderMap();
+
+      const filtered = spots.filter(s => {
+        const occ = getOccupied(s);
+        const pct = Math.round((occ / s.total) * 100);
+        const matchSearch = (s.name + " " + s.zone + " " + s.tags.join(" ")).toLowerCase().includes(searchTerm.toLowerCase());
+        if (!matchSearch) return false;
+        if (activeFilter === "available") return pct < 60;
+        if (activeFilter !== "all") return s.flags.includes(activeFilter);
+        return true;
+      });
+
+      const grid = document.getElementById("spotGrid");
+      if (filtered.length === 0) {
+        grid.innerHTML = `<p style="color:var(--muted); grid-column:1/-1; text-align:center; padding:42px 0;">No study spaces match the selected filters.</p>`;
+        return;
+      }
+
+      grid.innerHTML = filtered.map(s => {
+        const occ = getOccupied(s);
+        const free = s.total - occ;
+        const pct = Math.round((occ / s.total) * 100);
+        const st = getStatusInfo(pct);
+        const isChecked = checkedInSpotId === s.id;
+
+        const barsHtml = s.hourly.map((val, idx) => {
+          const adj = finalsMode ? Math.min(100, val + 24) : val;
+          return `
+            <div class="bar-wrap">
+              <div class="bar ${idx === 4 ? "now" : ""}" style="height:${adj}%"></div>
+              <span class="bar-hour">${hours[idx]}</span>
+            </div>
+          `;
+        }).join("");
+
+        return `
+          <article class="card ${highlightedId === s.id ? "highlighted" : ""}" id="spot-card-${s.id}">
+            <div class="card-top">
+              <div>
+                <div class="spot-name">${s.name}</div>
+                <div class="spot-zone">${s.zone}</div>
+              </div>
+              <span class="badge ${st.cls}">${st.label}</span>
+            </div>
+
+            <div>
+              <div class="meter-row">
+                <span><strong>${free}</strong> / ${s.total} desks free</span>
+                <span><strong>${pct}%</strong> full</span>
+              </div>
+              <div class="meter-track">
+                <div class="meter-fill" style="width:${pct}%; background:${st.color};"></div>
+              </div>
+            </div>
+
+            <div class="tags">
+              ${s.tags.map(t => `<span class="tag">${t}</span>`).join("")}
+            </div>
+
+            <div>
+              <div class="forecast-label">
+                <span>Hourly Occupancy Forecast</span>
+                <span style="color:#fda4af;">Red = Now (21:00)</span>
+              </div>
+              <div class="bars">${barsHtml}</div>
+            </div>
+
+            <div class="meta-row">
+              <span>Noise: <strong>${s.noise}</strong></span>
+              <span>Updated: ${s.updated}</span>
+            </div>
+
+            <div class="card-footer">
+              <button class="btn ${isChecked ? "checked" : "primary"}" onclick="checkIn(${s.id})">
+                ${isChecked ? "Checked In (Leave)" : "Check In (-1 Desk)"}
+              </button>
+              <button class="btn" onclick="openReportModal(${s.id})">Report Crowd</button>
+            </div>
+          </article>
+        `;
+      }).join("");
+    }
+
+    function openReportModal(id) {
+      reportTargetId = id;
+      const spot = spots.find(s => s.id === id);
+      document.getElementById("reportModalTitle").textContent = `Report: ${spot.short}`;
+      document.getElementById("reportModal").classList.add("open");
+    }
+
+    function openQrModal() {
+      const sel = document.getElementById("qrSpotSelect");
+      sel.innerHTML = spots.map(s => `<option value="${s.id}">${s.name} — Desk #B-14</option>`).join("");
+      document.getElementById("qrModal").classList.add("open");
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove("open");
+    }
+
+    function confirmQrCheckIn() {
+      const id = Number(document.getElementById("qrSpotSelect").value);
+      closeModal("qrModal");
+      checkIn(id, true);
+    }
+
+    function submitReport(ratio) {
+      const spot = spots.find(s => s.id === reportTargetId);
+      const targetOcc = Math.round(spot.total * ratio);
+      const currentBase = spot.baseOccupied + (finalsMode ? spot.finalsBoost : 0);
+      spot.userDelta = targetOcc - currentBase;
+      spot.updated = "Just now (User report)";
+      reportTotal += 1;
+      closeModal("reportModal");
+      render();
+      showToast(`Live crowd report submitted for ${spot.short}!`);
+    }
+
+    document.getElementById("searchInput").addEventListener("input", e => {
+      searchTerm = e.target.value;
+      render();
+    });
+
+    document.querySelectorAll(".pill").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".pill").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        activeFilter = btn.dataset.filter;
+        highlightedId = null;
+        render();
+      });
+    });
+
+    document.getElementById("finalsToggle").addEventListener("change", e => {
+      finalsMode = e.target.checked;
+      document.getElementById("finalsLabel").classList.toggle("active", finalsMode);
+      render();
+      showToast(finalsMode ? "Finals Week Simulation enabled!" : "Returned to normal week view.");
+    });
+
+    render();
+  </script>
+</body>
+</html>
